@@ -8,20 +8,41 @@ import requests
 def getLibraryInfo(name):
     r = requests.get("https://api.cdnjs.com/libraries/" + name)
     return r.json()
+class Author(graphene.ObjectType):
+    name = graphene.String()
+    email = graphene.String()
+    def __init__(self, author):
+        try:
+            self.name = author["name"]
+        except:
+            self.name = ""
+        try:
+            self.email = author["email"]
+        except:
+            self.email = ""
+
 class Library(graphene.ObjectType):
     name = graphene.String()
     keywords = graphene.List(graphene.String)
+    authors = graphene.List(Author)
     description= graphene.String()
     license= graphene.String()
     homepage = graphene.String()
     #autoupdate: 
 
-    def __init__(self, name, keywords, description, license, homepage):
+    def __init__(self, name, keywords, description, license, homepage, authors):
         self.name = name
         self.keywords = keywords
         self.description = description
         self.license = license
         self.homepage = homepage
+        processed_authors = []
+        if(type(authors) == list):
+            for author in authors:
+                processed_authors.append(Author(author))
+            self.authors = processed_authors
+        elif(type(authors) == str):
+            self.authors = [{"name":authors, "email":""}]
 
 class Query(graphene.ObjectType):
     #library = graphene.String(name=graphene.String(default_value="stranger"))
@@ -29,7 +50,7 @@ class Query(graphene.ObjectType):
     library = graphene.Field(Library, name=graphene.String(default_value="stranger"))
     def resolve_library(self, info, name):
         libData = getLibraryInfo(name)
-        return Library(libData["name"], libData["keywords"], libData["description"], libData["license"], libData["homepage"])
+        return Library(libData["name"], libData["keywords"], libData["description"], libData["license"], libData["homepage"], libData["authors"])
 
 app = FastAPI()
 templates = Jinja2Templates(directory='static/')
