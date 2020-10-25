@@ -3,26 +3,33 @@ from typing import Optional
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 from starlette.graphql import GraphQLApp
+import requests
 
+def getLibraryInfo(name):
+    r = requests.get("https://api.cdnjs.com/libraries/" + name)
+    return r.json()
 class Library(graphene.ObjectType):
     name = graphene.String()
     keywords = graphene.List(graphene.String)
     description= graphene.String()
-    #autoupdate: 
     license= graphene.String()
+    homepage = graphene.String()
+    #autoupdate: 
 
-    def __init__(self, name, keywords, description, license):
+    def __init__(self, name, keywords, description, license, homepage):
         self.name = name
         self.keywords = keywords
         self.description = description
         self.license = license
+        self.homepage = homepage
 
 class Query(graphene.ObjectType):
     #library = graphene.String(name=graphene.String(default_value="stranger"))
     #library = Library("react", "frontend", "component-based ui library", "MIT")
-    library = graphene.Field(Library)
-    def resolve_library(self, info):
-        return Library("react", ["frontend", "ui"], "component-based ui library", "MIT")
+    library = graphene.Field(Library, name=graphene.String(default_value="stranger"))
+    def resolve_library(self, info, name):
+        libData = getLibraryInfo(name)
+        return Library(libData["name"], libData["keywords"], libData["description"], libData["license"], libData["homepage"])
 
 app = FastAPI()
 templates = Jinja2Templates(directory='static/')
