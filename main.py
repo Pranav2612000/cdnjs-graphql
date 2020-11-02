@@ -12,14 +12,8 @@ class Author(graphene.ObjectType):
     name = graphene.String()
     email = graphene.String()
     def __init__(self, author):
-        try:
-            self.name = author["name"]
-        except:
-            self.name = ""
-        try:
-            self.email = author["email"]
-        except:
-            self.email = ""
+            self.name = author.get("name", "")
+            self.email = author.get("email", "")
 
 class Library(graphene.ObjectType):
     name = graphene.String()
@@ -38,9 +32,7 @@ class Library(graphene.ObjectType):
         self.homepage = homepage
         processed_authors = []
         if(type(authors) == list):
-            for author in authors:
-                processed_authors.append(Author(author))
-            self.authors = processed_authors
+            self.authors = [Author(author) for author in authors]
         elif(type(authors) == str):
             self.authors = [{"name":authors, "email":""}]
 
